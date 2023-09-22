@@ -9,6 +9,8 @@ import UIKit
 
 class ViewController: UIViewController {
     
+    let queue = DispatchQueue.global(qos: .utility)
+    
     var isBlack: Bool = false {
         didSet {
             if isBlack {
@@ -62,7 +64,9 @@ class ViewController: UIViewController {
         setupHierarchy()
         setupLayout()
         
-        self.bruteForce(passwordToUnlock: "1!gr")
+        queue.async {
+            self.bruteForce(passwordToUnlock: "1!gr")
+        }
         
     }
     
