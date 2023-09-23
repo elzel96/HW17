@@ -50,3 +50,7 @@ func generateBruteForce(_ string: String, fromArray array: [String]) -> String {
 
     return str
 }
+
+func generateRandomPassword() -> String {
+    String((0..<2).map{ _ in String().printable.randomElement()! })
+}

@@ -11,6 +11,8 @@ class ViewController: UIViewController {
     
     let queue = DispatchQueue.global(qos: .utility)
     
+    var generatedPassword = ""
+    
     var isBlack: Bool = false {
         didSet {
             if isBlack {
@@ -36,14 +38,13 @@ class ViewController: UIViewController {
         let button = UIButton(type: .system)
         button.setTitle("Generate password", for: .normal)
         button.titleLabel?.font = .boldSystemFont(ofSize: 18)
-        //button.addTarget(self, action: #selector(buttonTapped), for: .touchUpInside)
+        button.addTarget(self, action: #selector(passwordGenerated), for: .touchUpInside)
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
     
     private lazy var passwordLabel: UILabel = {
         let label = UILabel()
-        //label.text = "-"
         label.font = .boldSystemFont(ofSize: 18)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -64,26 +65,6 @@ class ViewController: UIViewController {
         setupHierarchy()
         setupLayout()
         
-        queue.async {
-            self.bruteForce(passwordToUnlock: "1!gr")
-        }
-        
-    }
-    
-    func bruteForce(passwordToUnlock: String) {
-        let ALLOWED_CHARACTERS:   [String] = String().printable.map { String($0) }
-
-        var password: String = ""
-
-        // Will strangely ends at 0000 instead of ~~~
-        while password != passwordToUnlock { // Increase MAXIMUM_PASSWORD_SIZE value for more
-            password = generateBruteForce(password, fromArray: ALLOWED_CHARACTERS)
-//             Your stuff here
-            print(password)
-            // Your stuff here
-        }
-        
-        print(password)
     }
     
     // MARK: - Setups
@@ -111,10 +92,46 @@ class ViewController: UIViewController {
         ])
     }
     
+    func bruteForce(passwordToUnlock: String) {
+        let ALLOWED_CHARACTERS:   [String] = String().printable.map { String($0) }
+
+        var password: String = ""
+
+        let workItem = DispatchWorkItem {
+            while password != passwordToUnlock {
+                password = generateBruteForce(password, fromArray: ALLOWED_CHARACTERS)
+                DispatchQueue.main.sync {
+                    self.passwordLabel.text = "Is \(password) your password?"
+                }
+            }
+        }
+        
+        let notifyView = DispatchWorkItem {
+            DispatchQueue.main.sync {
+                self.passwordLabel.text = "Done! Your password is \(password)"
+            }
+        }
+        
+        workItem.notify(queue: queue) {
+            notifyView.perform()
+        }
+        
+        queue.async(execute: workItem)
+    }
+    
     // MARK: - Action
     
     @objc func buttonTapped() {
         isBlack.toggle()
+    }
+    
+    @objc func passwordGenerated() {
+        generatedPassword = generateRandomPassword()
+        passwordField.text = generatedPassword
+        print(generatedPassword)
+        queue.async {
+            self.bruteForce(passwordToUnlock: self.generatedPassword)
+        }
     }
 }
 
